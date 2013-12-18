@@ -8,9 +8,9 @@
 */
 
   //Setup variables
-  const byte CAMERA_SHUTTER = 51; //output to trigger camera
-  const byte TRIGGER = 52; //Input to start automated capture
-  const byte AUTOMATED_RUNNING_LED = 53;
+  const byte CAMERA_SHUTTER = 41; //51 output to trigger camera
+  const byte TRIGGER = 39; // 70Input to start automated capture
+  const byte AUTOMATED_RUNNING_LED = 40; //52
 
   //OUTPUT BANKS
   const byte A = 0;
@@ -30,32 +30,32 @@
 
 void setup() {
   
-  leds[A][0] = 71;
-  leds[A][1] = 72;
-  leds[A][2] = 73;
-  leds[A][3] = 74;
-  leds[A][4] = 75;
-  leds[A][5] = 76;
-  leds[A][6] = 77;
-  leds[A][7] = 78;
+  leds[A][0] = 29; //71
+  leds[A][1] = 28; //72
+  leds[A][2] = 27; //73
+  leds[A][3] = 26; //74
+  leds[A][4] = 25; //75
+  leds[A][5] = 24; //76
+  leds[A][6] = 23; //77
+  leds[A][7] = 22; //78
   
-  leds[B][0] = 53;
-  leds[B][1] = 54;
-  leds[B][2] = 55;
-  leds[B][3] = 56;
-  leds[B][4] = 57;
-  leds[B][5] = 58;
-  leds[B][6] = 59;
-  leds[B][7] = 60;
+  leds[B][0] = 37;  //53
+  leds[B][1] = 36;  //54
+  leds[B][2] = 35;	//55
+  leds[B][3] = 34;	//56
+  leds[B][4] = 33;	//57
+  leds[B][5] = 32;	//58
+  leds[B][6] = 31;	//59
+  leds[B][7] = 30;	//60
   
-  leds[C][0] = 35;
-  leds[C][1] = 36;
-  leds[C][2] = 37;
-  leds[C][3] = 38;
-  leds[C][4] = 39;
-  leds[C][5] = 40;
-  leds[C][6] = 41;
-  leds[C][7] = 42; 
+  leds[C][0] = 49;	//35
+  leds[C][1] = 48;	//36
+  leds[C][2] = 47;	//37
+  leds[C][3] = 46;	//38
+  leds[C][4] = 45;	//39
+  leds[C][5] = 44;	//40
+  leds[C][6] = 43;	//41
+  leds[C][7] = 42; 	//42
  
   rows[0] = leds[B][0];
   rows[1] = leds[B][1];

@@ -11,7 +11,7 @@
   const byte CAMERA_SHUTTER = 41; //51 output to trigger camera
   const byte TRIGGER = 39; // 70Input to start automated capture
   const byte AUTOMATED_RUNNING_LED = 40; //52
-
+  const byte DEBUG_LED = 13;
   //OUTPUT BANKS
   const byte A = 0;
   const byte B = 1;
@@ -80,46 +80,65 @@ void setup() {
   columns[14] = leds[C][6];
   columns[15] = leds[C][7];
   
-  Serial.begin(38400); //init serial port
-  Serial.setTimeout(100);
-  
+  Serial3.begin(38400); //init serial port
+  Serial3.setTimeout(100);
+  Serial3.write("RTI DOME Controller v0.1 \r\n");
+
   //Setup IO
   pinMode(TRIGGER, INPUT);
   pinMode(CAMERA_SHUTTER, OUTPUT); 
   pinMode(AUTOMATED_RUNNING_LED, OUTPUT);
   
-  for( int i = 0; i < sizeof(leds); i++){
+  Serial3.write("*\r\n");
+  Serial3.println(leds[A][5]);
+  Serial3.println(columns[5]);
+  for( int i = 0; i < 3; i++){
+     Serial3.println(columns[5]);
       //iterate through the banks of leds
-      for(int j = 0; j < sizeof(leds[i]); j++){
-       pinMode(leds[i][j], OUTPUT); //set the pin for the LED as an output 
+      for(int j = 0; j < 8; j++){
+       pinMode(leds[i][j], OUTPUT); //set the pin for the LED as an output
       }
   }
+  
+
+  
+  Serial3.write("Init Complete\r\n");
 }
 
+void flash_debug(int time){
+  digitalWrite(DEBUG_LED, HIGH);
+  delay(time);
+  digitalWrite(DEBUG_LED, LOW);
+}
+
+
 void loop() {
-  if(digitalRead(TRIGGER) == HIGH){
+  byte input[6];
+  if(digitalRead(TRIGGER) == LOW){
+    Serial3.write("Starting autorun\r\n");
     autorun();
+    Serial3.write("Autorun complete\r\n");
   }
-  if(Serial.peek() == '?'){
+  if(Serial3.peek() == '?'){
+    
     // This is the software querying to make sure it's got the correct device attached
-    Serial.read();
+    Serial3.read();
     spoofResponse();
-  }
-  if(Serial.peek() == '!'){
+  }else if(Serial3.peek() == '!'){
     //This is the software trying to init the system, can just be thrown away
     char null[11];
-    Serial.readBytes(null, 9);
-  }
-  byte input[6];
-  if (Serial.readBytes((char* )input, 6) ==6){
+    Serial3.readBytes(null, 9);
+  } else if (Serial3.readBytes((char* )input, 6) ==6){
      //read the expected amount of data 
      process(A, input[1]);
      process(B, input[3]);
      process(C, input[5]);
   }else{
    //didn't get the expected amount of data from the serial link before timeout 
+   flash_debug(200);
   }
 }
+
 
 void autorun(){
    // Perform an automated capture sequence 
@@ -143,7 +162,7 @@ void autorun(){
 
 void spoofResponse(){
    // Spoof the response from the USB IO device
-   Serial.println("USB I/O 24R1"); 
+   Serial3.println("USB I/O 24R1"); 
 }
 
 void process(byte bank, byte state){

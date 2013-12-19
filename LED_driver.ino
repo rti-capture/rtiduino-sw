@@ -88,12 +88,7 @@ void setup() {
   pinMode(TRIGGER, INPUT);
   pinMode(CAMERA_SHUTTER, OUTPUT); 
   pinMode(AUTOMATED_RUNNING_LED, OUTPUT);
-  
-  Serial3.write("*\r\n");
-  Serial3.println(leds[A][5]);
-  Serial3.println(columns[5]);
   for( int i = 0; i < 3; i++){
-     Serial3.println(columns[5]);
       //iterate through the banks of leds
       for(int j = 0; j < 8; j++){
        pinMode(leds[i][j], OUTPUT); //set the pin for the LED as an output
@@ -113,7 +108,6 @@ void flash_debug(int time){
 
 
 void loop() {
-  byte input[6];
   if(digitalRead(TRIGGER) == LOW){
     Serial3.write("Starting autorun\r\n");
     autorun();
@@ -128,8 +122,11 @@ void loop() {
     //This is the software trying to init the system, can just be thrown away
     char null[11];
     Serial3.readBytes(null, 9);
-  } else if (Serial3.readBytes((char* )input, 6) ==6){
+  } else if (Serial3.available() >=6){
+    char input[10];
+    Serial3.readBytes(input,6);
      //read the expected amount of data 
+     Serial3.println(input[1]);
      process(A, input[1]);
      process(B, input[3]);
      process(C, input[5]);
@@ -165,7 +162,9 @@ void spoofResponse(){
    Serial3.println("USB I/O 24R1"); 
 }
 
-void process(byte bank, byte state){
+void process(byte bank, byte state_in){
+  int state = state_in + 0;
+  Serial3.write(state);
    if (state & 1){
      digitalWrite(leds[bank][0], HIGH);
    }else{

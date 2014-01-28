@@ -33,14 +33,14 @@
 
 void setup() {
   
-  leds[A][0] = 29; //71
-  leds[A][1] = 28; //72
-  leds[A][2] = 27; //73
-  leds[A][3] = 26; //74
-  leds[A][4] = 25; //75
-  leds[A][5] = 24; //76
-  leds[A][6] = 23; //77
-  leds[A][7] = 22; //78
+  leds[A][0] = 22; //78
+  leds[A][1] = 23; //77
+  leds[A][2] = 24; //76
+  leds[A][3] = 25; //75
+  leds[A][4] = 26; //74
+  leds[A][5] = 27; //73
+  leds[A][6] = 28; //72
+  leds[A][7] = 29; //71
   
   leds[B][0] = 37;  //53
   leds[B][1] = 36;  //54
@@ -144,6 +144,8 @@ void flash_debug(int time){
 }
 
 
+
+
 void loop() {
   if(digitalRead(TRIGGER) == LOW){
     Serial3.write("Starting autorun\r\n");
@@ -213,42 +215,42 @@ void spoofResponse(){
 void process(byte bank, byte state_in){
   int state = state_in + 0;
   Serial3.write(state);
-   if (state & 128){
+  if (state & 1){
      digitalWrite(leds[bank][0], HIGH);
    }else{
      digitalWrite(leds[bank][0], LOW);
    }
-  if (state & 64){
+  if (state & 2){
     digitalWrite(leds[bank][1], HIGH);
   }else{
     digitalWrite(leds[bank][1], LOW);
   } 
-  if (state & 32){
+  if (state & 4){
     digitalWrite(leds[bank][2], HIGH);
   }else{
     digitalWrite(leds[bank][2], LOW);
   }
-  if (state & 16){
+  if (state & 8){
     digitalWrite(leds[bank][3], HIGH);
   }else{
     digitalWrite(leds[bank][3], LOW);
   }
-  if (state & 8){
+  if (state & 16){
     digitalWrite(leds[bank][4], HIGH);
   }else{
      digitalWrite(leds[bank][4], LOW);
   }
-  if (state & 4){
+  if (state & 32){
     digitalWrite(leds[bank][5], HIGH);
   }else{
      digitalWrite(leds[bank][5], LOW);
   }
-   if (state & 2){
+   if (state & 64){
      digitalWrite(leds[bank][6], HIGH);
   }else{
     digitalWrite(leds[bank][6], LOW);
   }
-  if (state & 1){
+  if (state & 128){
     digitalWrite(leds[bank][7], HIGH);
   }else{
     digitalWrite(leds[bank][7], LOW);

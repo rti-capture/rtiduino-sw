@@ -27,6 +27,9 @@
   int BETWEEN_SHOT_DELAY = 100;
   byte rows[5];
   byte columns[16];
+  
+  //enable watchdog checks
+  ledburncheck = 1;
 
 void setup() {
   
@@ -95,10 +98,44 @@ void setup() {
       }
   }
   
-
+   watchdoginit();
   
   Serial3.write("Init Complete\r\n");
 }
+
+boolean multiple_leds(byte input){
+	//check that more than 1 bit is set in the input - if so then more than 1 LED
+	// will be on so overheating is not an issue
+	return !(input == 0) && !(input&(input -1));
+}
+
+void watchdoginit() {
+  cli();//stop interrupts
+ //set timer1 interrupt at 1Hz (15624)
+  TCCR1A = 0;// set entire TCCR1A register to 0
+  TCCR1B = 0;// same for TCCR1B
+  TCNT1  = 0;//initialize counter value to 0
+  // set compare match register for 1hz increments (sets Timeout)
+  OCR1A = 65500; // = (16*10^6) / (1*1024) - 1 (must be <65536)
+  // turn on CTC mode
+  TCCR1B |= (1 << WGM12);
+  // Set CS12 and CS10 bits for 1024 prescaler
+  TCCR1B |= (1 << CS12) | (1 << CS10);  
+  // enable timer compare interrupt
+  TIMSK1 |= (1 << OCIE1A);
+  sei();//allow interrupts
+ }
+ 
+ void watchdogstop() {
+  // Set CS12 and CS10 bits ZERO to stop timer 
+  TCCR1B &= !((1 << CS12) | (1 << CS10)); 
+}
+
+void watchdogstart() {
+  // Set CS12 and CS10 bits for 1024 prescaler and start
+  TCCR1B |= (1 << CS12) | (1 << CS10);  
+}
+
 
 void flash_debug(int time){
   digitalWrite(DEBUG_LED, HIGH);
@@ -126,10 +163,21 @@ void loop() {
     char input[10];
     Serial3.readBytes(input,6);
      //read the expected amount of data 
-     Serial3.println(input[1]);
-     process(A, input[1]);
-     process(B, input[3]);
-     process(C, input[5]);
+	 char Astate = input[1];
+	 char Bstate = input[3];
+	 char Cstate = input[5];
+	 if (Astate == 0) || (Bstate == 0) || (Cstate == 0){
+		//all LEDs are off
+		watchdogstop();
+	}else if(multiple_leds(Astate) || multiple_leds(Bstate & 0x1F)  || multiple_leds(Cstate){
+		//more than 1 LED will be lit
+		watchdogstop();
+	}else{
+		watchdogstart();
+	}
+     process(A, Astate);
+     process(B, Bstate);
+     process(C, Cstate);
   }else{
    //didn't get the expected amount of data from the serial link before timeout 
    flash_debug(200);
@@ -205,4 +253,19 @@ void process(byte bank, byte state_in){
   }else{
     digitalWrite(leds[bank][7], LOW);
   }
+}
+
+
+ISR(TIMER1_COMPA_vect){//timer0 interrupt 2kHz toggles pin 8
+//generates pulse wave of frequency 2kHz/2 = 1kHz (takes two cycles for full wave- toggle high then toggle low)
+  if (ledburncheck){
+    digitalWrite(13,LOW);
+    ledison = 0;
+	process(A,0x0);
+	process(B,0x0);
+	process(C,0x0);
+    //Serial.println("dog");
+    watchdogstop();
+  }
+  
 }

@@ -32,7 +32,7 @@
   int ledburncheck = 1;
   
 void debug(String output){
-  Serial3.println(output);
+  //Serial3.println(output);
 }
 
 void setup() {
@@ -121,7 +121,7 @@ void watchdoginit() {
   TCCR1B = 0;// same for TCCR1B
   TCNT1  = 0;//initialize counter value to 0
   // set compare match register for 1hz increments (sets Timeout)
-  OCR1A = 65500; // = (16*10^6) / (1*1024) - 1 (must be <65536)
+  OCR1A = 65535; // = (16*10^6) / (1*1024) - 1 (must be <65536)
   // turn on CTC mode
   TCCR1B |= (1 << WGM12);
   // Set CS12 and CS10 bits for 1024 prescaler
@@ -141,6 +141,7 @@ void watchdoginit() {
 void watchdogstart() {
   debug("dog start");
   digitalWrite(DEBUG_LED, HIGH);
+  TCNT1  = 0;//initialize counter value to 0
   // Set CS12 and CS10 bits for 1024 prescaler and start
   TCCR1B |= (1 << CS12) | (1 << CS10);  
 }

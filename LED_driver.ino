@@ -297,7 +297,7 @@ void setup() {
   
   Serial3.begin(38400); //init serial port
   Serial3.setTimeout(100);
-  Serial3.write("RTI DOME Controller v0.1 \r\n");
+  Serial3.write("RTI DOME Controller v0.2 \r\n");
 
   //Setup IO
   pinMode(TRIGGER, INPUT);

@@ -342,7 +342,7 @@ void watchdoginit() {
   sei();//allow interrupts
  }
  
- void watchdogstop() {
+void watchdogstop() {
   debug("dog stop");
   //digitalWrite(DEBUG_LED, LOW);
   // Set CS12 and CS10 bits ZERO to stop timer 
@@ -365,8 +365,6 @@ void flash_debug(int time){
 }
 
 
-
-
 void loop() {
   if(digitalRead(TRIGGER) == LOW){
     Serial3.write("Starting autorun\r\n");
@@ -385,22 +383,22 @@ void loop() {
     char input[10];
     Serial3.readBytes(input,6);
     //read the expected amount of data 
-	char Astate = input[1];
-	char Bstate = input[3];
-	char Cstate = input[5];
-	if (Bstate == 0 || ( Astate == 0 && Cstate == 0)){
-		//all LEDs are off
-    debug("All off");
-		watchdogstop();
-	}else if(multiple_leds(Astate) || multiple_leds(Bstate & 0x1F)  || multiple_leds(Cstate) || (Astate != 0 && Cstate != 0 )){
-		//more than 1 LED will be lit
-    debug("multiple leds");
-		watchdogstop();
-	}else{
-    debug("kick dog");
-    watchdogstop();
-		watchdogstart();
-	}
+  	char Astate = input[1];
+  	char Bstate = input[3];
+  	char Cstate = input[5];
+  	if (Bstate == 0 || ( Astate == 0 && Cstate == 0)){
+  		//all LEDs are off
+      debug("All off");
+  		watchdogstop();
+  	}else if(multiple_leds(Astate) || multiple_leds(Bstate & 0x1F)  || multiple_leds(Cstate) || (Astate != 0 && Cstate != 0 )){
+  		//more than 1 LED will be lit
+      debug("multiple leds");
+  		watchdogstop();
+  	}else{
+      debug("kick dog");
+      watchdogstop();
+  		watchdogstart();
+  	}
     process(A, Astate);
     process(B, Bstate);
     process(C, Cstate);

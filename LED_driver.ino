@@ -7,61 +7,84 @@
  WARNING: All arrays are bytes so sizeof = length
 */
 
-  //Setup variables
-  const byte CAMERA_SHUTTER = 41; //51 output to trigger camera
-  const byte TRIGGER = 39; // 70Input to start automated capture
-  const byte AUTOMATED_RUNNING_LED = 40; //52
-  const byte DEBUG_LED = 13;
-  //OUTPUT BANKS
-  const byte A = 0;
-  const byte B = 1;
-  const byte C = 2;
-  
-  //LED OUTPUTS
-  byte leds[3][8];
-  
-  //Automated running
-  int LIGHT_ON_TIME = 1500;
-  int PRE_ON_DELAY = 100;
-  int SHUTTER_ACTUATION_TIME = 100;
-  int BETWEEN_SHOT_DELAY = 100;
-  byte AUTORUN_LEDS[76][3];
-  
-  //enable watchdog checks
-  int ledburncheck = 1;
+#define DEBUG                   1
+
+#define MAX_LEDS                128
+
+#define HAS_SCREEN              1
+
+// Serial Port Assignments
+#define DEBUG_SERIAL            Serial
+#define SCREEN                  Serial2
+#define CONSOLE                 Serial3
+
+//OUTPUT BANKS
+#define LED_BANKS               3
+#define A                       0
+#define B                       1
+#define C                       2
+
+// Hardware Config
+#define DEBUG_LED               13 // 
+#define CAMERA_SHUTTER          41 // Package pin 51: output to trigger camera
+#define TRIGGER                 39 // Package pin 70: Input to start automated capture
+#define AUTOMATED_RUNNING_LED   40 // Package pin 52
+
+#define BUTTONS                 5 // The number of buttons connected to the controller
+#define BUTTON_0
+#define BUTTON_1
+#define BUTTON_2
+#define BUTTON_3
+#define BUTTON_4
+
+//LED OUTPUTS
+byte leds[LED_BANKS][8];
+
+//Automated running
+int LIGHT_ON_TIME = 1500;
+int PRE_ON_DELAY = 100;
+int SHUTTER_ACTUATION_TIME = 100;
+int BETWEEN_SHOT_DELAY = 100;
+byte AUTORUN_LEDS[MAX_LEDS][LED_BANKS];
+
+//enable watchdog checks
+int ledburncheck = 1;
   
 void debug(String output){
-  //Serial3.println(output);
+  //CONSOLE.println(output);
 }
 
 void setup() {
-  
-  leds[A][0] = 22; //78
-  leds[A][1] = 23; //77
-  leds[A][2] = 24; //76
-  leds[A][3] = 25; //75
-  leds[A][4] = 26; //74
-  leds[A][5] = 27; //73
-  leds[A][6] = 28; //72
-  leds[A][7] = 29; //71
-  
-  leds[B][0] = 37;  //53
-  leds[B][1] = 36;  //54
-  leds[B][2] = 35;	//55
-  leds[B][3] = 34;	//56
-  leds[B][4] = 33;	//57
-  leds[B][5] = 32;	//58
-  leds[B][6] = 31;	//59
-  leds[B][7] = 30;	//60
-  
-  leds[C][0] = 49;	//35
-  leds[C][1] = 48;	//36
-  leds[C][2] = 47;	//37
-  leds[C][3] = 46;	//38
-  leds[C][4] = 45;	//39
-  leds[C][5] = 44;	//40
-  leds[C][6] = 43;	//41
-  leds[C][7] = 42; 	//42
+
+  /* Rows 0-7 (+28V) */
+  leds[A][0] = 22; // Package Pin 78
+  leds[A][1] = 23; // Package Pin 77
+  leds[A][2] = 24; // Package Pin 76
+  leds[A][3] = 25; // Package Pin 75
+  leds[A][4] = 26; // Package Pin 74
+  leds[A][5] = 27; // Package Pin 73
+  leds[A][6] = 28; // Package Pin 72
+  leds[A][7] = 29; // Package Pin 71
+
+  /* Columns 0-7 (GND) */
+  leds[B][0] = 37;  // Package Pin 53
+  leds[B][1] = 36;  // Package Pin 54
+  leds[B][2] = 35;	// Package Pin 55
+  leds[B][3] = 34;	// Package Pin 56
+  leds[B][4] = 33;	// Package Pin 57
+  leds[B][5] = 32;	// Package Pin 58
+  leds[B][6] = 31;	// Package Pin 59
+  leds[B][7] = 30;	// Package Pin 60
+
+  /* Rows 8-15 (+28V) */
+  leds[C][0] = 49;	// Package Pin 35
+  leds[C][1] = 48;	// Package Pin 36
+  leds[C][2] = 47;	// Package Pin 37
+  leds[C][3] = 46;	// Package Pin 38
+  leds[C][4] = 45;	// Package Pin 39
+  leds[C][5] = 44;	// Package Pin 40
+  leds[C][6] = 43;	// Package Pin 41
+  leds[C][7] = 42; 	// Package Pin 42
   
 // Quarter A
   AUTORUN_LEDS[0][0] = 1; //1
@@ -299,9 +322,33 @@ void setup() {
   AUTORUN_LEDS[75][1] = 8;
   AUTORUN_LEDS[75][2] = 128;
   
-  Serial3.begin(38400); //init serial port
-  Serial3.setTimeout(100);
-  Serial3.write("RTI DOME Controller v0.2 \r\n");
+  CONSOLE.begin(38400); //init serial port
+  CONSOLE.setTimeout(100);
+  CONSOLE.write("RTI DOME Controller v0.2 \r\n");
+
+#if DEBUG
+  DEBUG_SERIAL.begin(9600);
+  DEBUG_SERIAL.setTimeout(100);
+  DEBUG_SERIAL.write("RTI DOME Controller v0.2 \r\n");
+#endif
+
+
+#if HAS_SCREEN
+  SCREEN.begin(9600); //init serial port
+  SCREEN.setTimeout(100);
+  SCREEN.write(254);
+  SCREEN.write(128);
+  SCREEN.write("                ");
+  SCREEN.write(254);
+  SCREEN.write(192);
+  SCREEN.write("                ");
+  SCREEN.write(254);
+  SCREEN.write(128);
+  SCREEN.write("RTI DOME");
+  SCREEN.write(254);
+  SCREEN.write(192);
+  SCREEN.write("Controller v0.2");
+#endif
 
   //Setup IO
   pinMode(TRIGGER, INPUT);
@@ -316,7 +363,7 @@ void setup() {
   }
   watchdoginit();
   
-  Serial3.write("Init Complete\r\n");
+  CONSOLE.write("Init Complete\r\n");
 }
 
 boolean multiple_leds(byte input){
@@ -367,21 +414,21 @@ void flash_debug(int time){
 
 void loop() {
   if(digitalRead(TRIGGER) == LOW){
-    Serial3.write("Starting autorun\r\n");
+    CONSOLE.write("Starting autorun\r\n");
     autorun();
-    Serial3.write("Autorun complete\r\n");
+    CONSOLE.write("Autorun complete\r\n");
   }
-  if(Serial3.peek() == '?'){  
+  if(CONSOLE.peek() == '?'){  
     // This is the software querying to make sure it's got the correct device attached
-    Serial3.read();
+    CONSOLE.read();
     spoofResponse();
-  }else if(Serial3.peek() == '!'){
+  }else if(CONSOLE.peek() == '!'){
     //This is the software trying to init the system, can just be thrown away
     char null[11];
-    Serial3.readBytes(null, 9);
-  } else if (Serial3.available() >=6){
+    CONSOLE.readBytes(null, 9);
+  } else if (CONSOLE.available() >=6){
     char input[10];
-    Serial3.readBytes(input,6);
+    CONSOLE.readBytes(input,6);
     //read the expected amount of data 
   	char Astate = input[1];
   	char Bstate = input[3];
@@ -411,7 +458,24 @@ void loop() {
 void autorun(){
   // Perform an automated capture sequence 
   digitalWrite(AUTOMATED_RUNNING_LED, HIGH);
+  SCREEN.write(254);
+  SCREEN.write(192);
+  SCREEN.write("                ");
+  SCREEN.write(254);
+  SCREEN.write(128);
+  SCREEN.write("Autorun:        ");
+  SCREEN.write(254);
+  SCREEN.write(192);
+  SCREEN.write("    /");
+  SCREEN.print(75, DEC);
+  
   for(int i = 0; i < 76; i++){
+      SCREEN.write(254);
+      SCREEN.write(192);
+      SCREEN.write("    ");
+      SCREEN.write(254);
+      SCREEN.write(192);
+      SCREEN.print(i, DEC);         
       process(A, char(AUTORUN_LEDS[i][0]));
       process(B, char(AUTORUN_LEDS[i][1]));
       process(C, char(AUTORUN_LEDS[i][2]));
@@ -426,11 +490,19 @@ void autorun(){
       delay(BETWEEN_SHOT_DELAY);   
   }
   digitalWrite(AUTOMATED_RUNNING_LED, LOW);
+  
+  SCREEN.write(254);
+  SCREEN.write(128);
+  SCREEN.write("RTI DOME        ");
+  SCREEN.write(254);
+  SCREEN.write(192);
+  SCREEN.write("Controller v0.2 ");
+  
 }
 
 void spoofResponse(){
   // Spoof the response from the USB IO device
-  Serial3.println("USB I/O 24R1"); 
+  CONSOLE.println("USB I/O 24R1"); 
 }
 
 void process(byte bank, byte state_in){

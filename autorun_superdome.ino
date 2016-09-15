@@ -2,7 +2,7 @@
 void setup_autorun_superdome(void)
 {
 #if DEBUG
-  DEBUG_SERIAL.write("Setup for 128-LED SuperDome\r\n");
+  debug("Setup for 128-LED SuperDome\r\n");
 #endif
 
 //Quarter A  

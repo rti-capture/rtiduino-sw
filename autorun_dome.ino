@@ -2,7 +2,7 @@
 void setup_autorun_dome(void)
 {
 #if DEBUG
-  DEBUG_SERIAL.write("Setup for 76-LED Dome\r\n");
+  debug("Setup for 76-LED Dome\r\n");
 #endif
 
 //Quarter A
@@ -10,10 +10,10 @@ void setup_autorun_dome(void)
   AUTORUN_LEDS[0][1] = 8;
   AUTORUN_LEDS[0][2] = 0; 
   AUTORUN_LEDS[1][0] = 1; //2
-  AUTORUN_LEDS[1][1] = 128;
+  AUTORUN_LEDS[1][1] = 128;    
   AUTORUN_LEDS[1][2] = 0;
-  AUTORUN_LEDS[2][0] = 2; //3
-  AUTORUN_LEDS[2][1] = 128;
+  AUTORUN_LEDS[2][0] = 2; //3   
+  AUTORUN_LEDS[2][1] = 128;    
   AUTORUN_LEDS[2][2] = 0;
   AUTORUN_LEDS[3][0] = 4;  //4
   AUTORUN_LEDS[3][1] = 128;

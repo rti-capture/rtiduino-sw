@@ -1,5 +1,10 @@
 /*
- LED driver for RTI domes mark >3
+ LED driver for RTI Dome 7 "SuperDome"
+ Winter 2016
+ Graeme Bragg
+ g.bragg@ecs.soton.ac.uk
+
+ Modified from LED driver for RTI domes ma rk >3
  Autumn 2013
  Philip Basford
  pjbasford@ieee.org
@@ -11,12 +16,21 @@
 #define DEBUG                     1     // Define whether to output debug info on debug serial port
 #define HAS_SCREEN                1     // Define whether a serial screen is connected to Serial2
 #define LED_BURN_CHECK            1     // Define whether to enable LED_BURN_CHECK
-#define BUTTONS                   4     // The number of buttons connected to the controller
+#define BUTTONS                   5     // The number of buttons connected to the controller
 #define BUTTON_TIMEOUT            45000 // Timeout for buttons. 15000 is 0.96s
-#define BUTTON_DEBOUNCE_TIMEOUT   15000 // ~200ms
+#define BUTTON_DEBOUNCE_TIMEOUT   15000 // ~1s
 #define DEFAULT_NUM_LEDS          128   // The default number of LEDs connected. Currently only 76 and 128 are supported.
 
-//#define OVERWRITE_NUM_LEDS        76   // Compile-time overwite value for num_leds. This should be set, flashed, commented out and then re-flashed.
+//#define OVERWRITE_NUM_LEDS        128   // Compile-time overwite value for num_leds. This should be set, flashed, commented out and then re-flashed.
+
+/* -------------------------------------------------------------------------------------------- */
+
+/* --------------------------------------- Focus Config --------------------------------------- */  
+#define FOCUS_TIMEOUT             45000 // Timeout for focus.
+#define FOCUS_LIMIT               60   // Number of loops, 3 minutes ~ 60, 5 minutes ~ 100
+#define FOCUS_BANK_AC             136   // Two rows on - 8 + 128, same LEDs in all quarters
+#define FOCUS_BANK_B              33    // first and sixth LED in each of the top banks.
+#define EXPOSUE_SET_TIME          500   // Leave light on for 500ms when setting exposure.
 
 /* -------------------------------------------------------------------------------------------- */
 
@@ -49,13 +63,15 @@
 //Button Config
 #define BUTTON_0                  62  // Package pin 89 - RED Has a pin-change interrupt associated for the STOP command.
 #define BUTTON_1                  63  // Package pin 88 - GREEN Used to trigger autorun
-#define BUTTON_2                  64  // Package pin 87
-#define BUTTON_3                  65  // Package pin 86
-#define BUTTON_4                  66  // Package pin 85
+#define BUTTON_2                  64  // Package pin 87 - UP button used for changing exposure
+#define BUTTON_3                  65  // Package pin 86 - DOWN button used for chainging exposure
+#define BUTTON_4                  66  // Package pin 85 - used to turn on top light for FOCUSing
 
+#define STOP                      BUTTON_0
 #define GO                        BUTTON_1
 #define UP                        BUTTON_2
 #define DOWN                      BUTTON_3
+#define FOCUS                     BUTTON_4
 
 // Default LED setting sanity check
 #if ((DEFAULT_NUM_LEDS != 76) & (DEFAULT_NUM_LEDS != 128))
@@ -68,10 +84,10 @@ uint8_t num_leds;                       // Number of LEDs connected to the contr
 byte AUTORUN_LEDS[MAX_LEDS][LED_BANKS]; // Array to hold autorun sequence
 
 //Automated running
-#define LIGHT_SLACK_TIME          50    // Slack time added to shutter times
-#define PRE_ON_DELAY              50    // LED "warm up" delay
+#define LIGHT_SLACK_TIME          10    // Slack time added to shutter times
+#define PRE_ON_DELAY              10    // LED "warm up" delay
 #define SHUTTER_ACTUATION_TIME    70    // 0.056s from http://www.imaging-resource.com/PRODS/nikon-d810/nikon-d810A6.HTM
-#define BETWEEN_SHOT_DELAY        100   // The time between shots to allow writing to card, etc.
+#define BETWEEN_SHOT_DELAY        1000  // The time between shots to allow writing to card, etc.
 
 #define MAX_SHUTTER               16    // Number of shutter speed entries
 #define DEFAULT_SHUTTER_KEY       10    // Default to half second exposures if EEPROM value corrupt/missing
@@ -345,9 +361,17 @@ void loop() {
     CONSOLE.write("Autorun complete\r\n");
   }
 #if BUTTONS > 3         // 3rd and 4th buttons connected - UP and DOWN respectively
-  if((digitalRead(UP) == LOW) || (digitalRead(DOWN) == LOW)) {
+  else if((digitalRead(UP) == LOW) || (digitalRead(DOWN) == LOW)) {
     // up/down button pressed, want to change set exposure.
     button_handler();    
+    delay(50);
+    screenBanner();
+  }
+#endif
+
+#if BUTTONS > 4        // 5th button connected: FOCUS lights
+  else if(digitalRead(FOCUS) == LOW) {
+    focus_handler();
     delay(50);
     screenBanner();
   }
@@ -614,7 +638,82 @@ void button_handler(void) {
   // Write the new shutter_key to EEPROM
   EEPROM.put(ADDR_SHUTTER_KEY, shutter_key);
 
-  screenBanner();
+  //screenBanner();
+}
+
+void focus_handler(void) {
+  // Turn on the top 4 lights to allow focusing.
+  uint8_t focus_loop, row_key, col_key;
+  
+  status_byte &= ~(STATE_AUTORUN_STOP);
+  status_byte |= STATE_AUTORUN;
+
+  screenFocus();              // Display the focus banner
+
+  // Turn on the LEDs for focusing.
+  process(A, char(FOCUS_BANK_AC));
+  process(B, char(FOCUS_BANK_B));
+  process(C, char(FOCUS_BANK_AC));
+  
+  // Use debounce timer to delay between FOCUS button tests.
+  buttonDebounceReset();
+  while (buttonDebounceValue() < BUTTON_DEBOUNCE_TIMEOUT);
+
+  // Focus timeout - about N minutes or until STOP button is pressed.   
+  for(focus_loop = 0; focus_loop < FOCUS_LIMIT; focus_loop++) {
+    buttonTimerReset();         // Start the button timeout
+    while (buttonTimerValue() < FOCUS_TIMEOUT) {
+
+      if(digitalRead(FOCUS) == LOW) {   
+        // FOCUS button has been pressed again, start an autowalk to set exposure
+        screenExposure();     // Display the exposure banner
+        
+        for(row_key = 0; row_key<4; row_key++) {
+          switch (row_key) {
+            // Set the row for autowalk
+            case 0:   process(A, char(8));
+                      process(C, char(0));
+                      break;
+                      
+            case 1:   process(A, char(128));
+                      process(C, char(0));
+                      break;
+                      
+            case 2:   process(A, char(0));
+                      process(C, char(128));
+                      break;
+                      
+            case 3:   process(A, char(0));
+                      process(C, char(8));
+                      break;
+                      
+            deafult:  break;
+          }
+          
+          for(col_key = 0; col_key < 8; col_key++) {
+            //Cycle through the different columns
+            watchdogstart();
+            process(B, char(1 << col_key));
+            delay(EXPOSUE_SET_TIME);
+            process(B, char(0));
+            watchdogstop();
+            if(status_byte & STATE_AUTORUN_STOP) break; // E-Stop has been pressed, stop running.
+          }
+          if(status_byte & STATE_AUTORUN_STOP) break;   // E-Stop has been pressed, stop running.
+        }
+        
+        status_byte |= STATE_AUTORUN_STOP;        // Reached the end of the autowalk, indicate that we should end.
+        
+      }
+      if(status_byte & STATE_AUTORUN_STOP) break;      // E-Stop has been pressed, stop running.
+    }
+    if(status_byte & STATE_AUTORUN_STOP) break;       // E-Stop has been pressed, stop running.
+  }
+  
+  // Turn off all of the LEDs
+  process(A, char(0));
+  process(B, char(0));
+  process(C, char(0));
 }
 
 void screenBanner(void) {
@@ -656,6 +755,34 @@ void screenShutter(void) {
   SCREEN.write(0xFE);           // Command Byte
   SCREEN.write(0x80 + 75);      // Position 64, start of line 2
   SCREEN.write(": UP ");
+#endif  
+}
+
+void screenFocus(void) {
+  // Print the Focus screen
+#if HAS_SCREEN
+  SCREEN.write(0xFE);           // Command Byte
+  SCREEN.write(0x01);           // Clear screen
+  delay(SCREEN_CMD_DELAY);
+  
+  SCREEN.write("Focusing LEDs ON");
+  SCREEN.write(0xFE);           // Command Byte
+  SCREEN.write(0x80 + 64);      // Position 64, start of line 2
+  SCREEN.write("STOP to exit");
+#endif  
+}
+
+void screenExposure(void) {
+  // Print the Exposure autowalk screen
+#if HAS_SCREEN
+  SCREEN.write(0xFE);           // Command Byte
+  SCREEN.write(0x01);           // Clear screen
+  delay(SCREEN_CMD_DELAY);
+  
+  SCREEN.write("Exposure Autowalk");
+  SCREEN.write(0xFE);           // Command Byte
+  SCREEN.write(0x80 + 64);      // Position 64, start of line 2
+  SCREEN.write("STOP to exit");
 #endif  
 }
 

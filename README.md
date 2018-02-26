@@ -1,2 +1,3 @@
 # rtiduino-sw
-Ardiono software for the RTI LED controller
+Arduino software for the RTI LED controller
+by University of Southampton

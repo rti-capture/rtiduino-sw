@@ -93,7 +93,7 @@ byte AUTORUN_LEDS[MAX_LEDS][LED_BANKS]; // Array to hold autorun sequence
 #define DEFAULT_SHUTTER_KEY       10    // Default to half second exposures if EEPROM value corrupt/missing
 uint8_t shutter_key;                    // Key for the position in the shutter speed table - this is stored in EEPROM
 
-#define SCREEN_CMD_DELAY          10    // Delay after some screen commands. Prevents blanking/non-response issues.
+#define SCREEN_CMD_DELAY          25    // Delay after some screen commands. Prevents blanking/non-response issues.
  
 #define STATE_AUTORUN             0x01  // State mask to indicate autorun is in progress
 #define STATE_AUTORUN_STOP        0x02  // State mask to indicate that autorun should stop
@@ -175,6 +175,18 @@ void setup() {
 
   SCREEN.write(0x7C);           // Special Command Byte
   SCREEN.write(157);            // Backlight fully on
+  delay(SCREEN_CMD_DELAY);
+
+  //Re-configure Screen Size. Added March 2018.
+  SCREEN.write(0x7C);           // Special Command Byte
+  SCREEN.write(4);            // 16 characters wide. 3 = 20, 4 = 16
+  delay(SCREEN_CMD_DELAY);
+
+  SCREEN.write(0x7C);           // Special Command Byte
+  SCREEN.write(6);            // 2-line screen. 5 = 4, 6 = 2
+  delay(SCREEN_CMD_DELAY);
+
+  SCREEN.write(0x01);           // Clear Screen
   delay(SCREEN_CMD_DELAY);
 #endif
 /* -------------------------------------------------------------------------------------------- */

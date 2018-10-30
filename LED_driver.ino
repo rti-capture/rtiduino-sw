@@ -19,7 +19,7 @@
 #define BUTTONS                   5     // The number of buttons connected to the controller
 #define BUTTON_TIMEOUT            45000 // Timeout for buttons. 15000 is 0.96s
 #define BUTTON_DEBOUNCE_TIMEOUT   15000 // ~1s
-#define DEFAULT_NUM_LEDS          128   // The default number of LEDs connected. Currently only 76 and 128 are supported.
+#define DEFAULT_NUM_LEDS          76   // The default number of LEDs connected. Currently only 76 and 128 are supported.
 
 //#define OVERWRITE_NUM_LEDS        128   // Compile-time overwite value for num_leds. This should be set, flashed, commented out and then re-flashed.
 
@@ -28,8 +28,16 @@
 /* --------------------------------------- Focus Config --------------------------------------- */  
 #define FOCUS_TIMEOUT             45000 // Timeout for focus.
 #define FOCUS_LIMIT               60   // Number of loops, 3 minutes ~ 60, 5 minutes ~ 100
+
+// 128-LED SuperDome
+#define FOCUS_BANK_AC_SUPER       136   // Two rows on - 8 + 128, same LEDs in all quarters
+#define FOCUS_BANK_B_SUPER        33    // first and sixth LED in each of the top banks.
+
+// 76-LED Dome
 #define FOCUS_BANK_AC             136   // Two rows on - 8 + 128, same LEDs in all quarters
-#define FOCUS_BANK_B              33    // first and sixth LED in each of the top banks.
+#define FOCUS_BANK_B              3    // first and sixth LED in each of the top banks.
+
+
 #define EXPOSUE_SET_TIME          500   // Leave light on for 500ms when setting exposure.
 
 /* -------------------------------------------------------------------------------------------- */
@@ -88,7 +96,7 @@ byte AUTORUN_LEDS[MAX_LEDS][LED_BANKS]; // Array to hold autorun sequence
 #define PRE_ON_DELAY              10    // LED "warm up" delay
 #define SHUTTER_ACTUATION_TIME    70    // 0.056s from http://www.imaging-resource.com/PRODS/nikon-d810/nikon-d810A6.HTM
 #define BETWEEN_SHOT_DELAY        1000  // The time between shots to allow writing to card, etc.
-
+//#define BETWEEN_SHOT_DELAY        10  // The time between shots to allow writing to card, etc.
 #define MAX_SHUTTER               16    // Number of shutter speed entries
 #define DEFAULT_SHUTTER_KEY       10    // Default to half second exposures if EEPROM value corrupt/missing
 uint8_t shutter_key;                    // Key for the position in the shutter speed table - this is stored in EEPROM
@@ -168,7 +176,8 @@ void setup() {
   DEBUG_SERIAL.begin(9600);
   DEBUG_SERIAL.setTimeout(100);
 #endif
-
+// wait a bit to see if it helps screen
+wait(1)
 #if HAS_SCREEN
   SCREEN.begin(9600); //init serial port
   SCREEN.setTimeout(100);
@@ -177,7 +186,7 @@ void setup() {
   SCREEN.write(157);            // Backlight fully on
   delay(SCREEN_CMD_DELAY);
 
-  //Re-configure Screen Size. Added March 2018.
+  //Confirm Screen Size
   SCREEN.write(0x7C);           // Special Command Byte
   SCREEN.write(4);            // 16 characters wide. 3 = 20, 4 = 16
   delay(SCREEN_CMD_DELAY);
@@ -495,6 +504,26 @@ void spoofResponse(){
   CONSOLE.println("USB I/O 24R1"); 
 }
 
+// debug function
+void toggleAll(){
+  int bank, chan, reps;
+  DEBUG_SERIAL.write("Toggling ALL i/o on/off\r\n");
+  for(reps=0; reps<10; reps++){
+    for(bank=0; bank < 3; bank++){
+      for(chan = 0; chan = 7; chan++){
+        digitalWrite(leds[bank][chan], HIGH);
+      }
+    }
+    delay(500);
+    for(bank=0; bank < 3; bank++){
+      for(chan = 0; chan = 7; chan++){
+        digitalWrite(leds[bank][chan], LOW);
+      }
+    }
+    delay(500);
+  }
+}
+
 void process(byte bank, byte state_in){
   int state = state_in + 0;
   if (state & 1){
@@ -656,16 +685,24 @@ void button_handler(void) {
 void focus_handler(void) {
   // Turn on the top 4 lights to allow focusing.
   uint8_t focus_loop, row_key, col_key;
+// debug mode to flash all on
+ 
   
   status_byte &= ~(STATE_AUTORUN_STOP);
   status_byte |= STATE_AUTORUN;
-
+  
   screenFocus();              // Display the focus banner
 
   // Turn on the LEDs for focusing.
-  process(A, char(FOCUS_BANK_AC));
-  process(B, char(FOCUS_BANK_B));
-  process(C, char(FOCUS_BANK_AC));
+  if(num_leds == 128) {
+    process(A, char(FOCUS_BANK_AC_SUPER));
+    process(B, char(FOCUS_BANK_B_SUPER));
+    process(C, char(FOCUS_BANK_AC_SUPER));
+  } else {
+    process(A, char(FOCUS_BANK_AC));
+    process(B, char(FOCUS_BANK_B));
+    process(C, char(FOCUS_BANK_AC));
+  }
   
   // Use debounce timer to delay between FOCUS button tests.
   buttonDebounceReset();
